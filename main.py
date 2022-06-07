@@ -1,30 +1,37 @@
-import requests
+import praw
 
-# note that CLIENT_ID refers to 'personal use script' and SECRET_TOKEN to 'token'
-auth = requests.auth.HTTPBasicAuth('nrEMmD3MZX1sWabdBT-_YQ', 'Suu_xZg7xZJtbjaIMyHVKdYblfz-xw')
+reddit = praw.Reddit(
+    client_id="8jrXecmLwkW93TuWPOJP6w",
+    client_secret="EoUz2jn4WW2o23T56QqQ9-382nbEoA",
+    password="Jitesh2910",
+    user_agent="testscript by u/AudioDuck1059",
+    username="AudioDuck1059",
+)
 
-# here we pass our login method (password), username, and password
-data = {'grant_type': 'password',
-        'username': 'CloudExtreme',
-        'password': 'Jitesh2910'}
+print(reddit.user.me())
 
-# setup our header info, which gives reddit a brief description of our app
-headers = {'User-Agent': 'MyBot/0.0.1'}
+url = str(input("Please input the reddit URL: "))
+submission = reddit.submission(url=url)
 
-# send our request for an OAuth token
-res = requests.post('https://www.reddit.com/api/v1/access_token',
-                    auth=auth, data=data, headers=headers)
+try:
+        content["thread_url"] = submission.url
+        content["thread_title"] = submission.title
+        content["thread_post"] = submission.selftext
+        content["comments"] = []
 
-# convert response to JSON and pull access_token value
-TOKEN = res.json()['access_token']
+        for top_level_comment in submission.comments:
+            if not top_level_comment.stickied:
+                content["comments"].append(
+                    {
+                        "comment_body": top_level_comment.body,
+                        "comment_url": top_level_comment.permalink,
+                        "comment_id": top_level_comment.id,
+                    }
+                )
 
-# add authorization to our headers dictionary
-headers = {**headers, **{'Authorization': f"bearer {TOKEN}"}}
+except AttributeError as e:
+   pass
 
-# while the token is valid (~2 hours) we just add headers=headers to our requests
-requests.get('https://oauth.reddit.com/api/v1/me', headers=headers)
 
-res = requests.get("https://oauth.reddit.com/r/python/hot",
-                   headers=headers)
-
-print(res.json())  # let's see what we get
+print("Received AskReddit threads successfully.")
+print(content)
