@@ -1,19 +1,26 @@
 import praw
+from gtts import gTTS
+from pathlib import Path
+from mutagen.mp3 import MP3
+from rich.progress import track
 
-reddit = praw.Reddit(
-    client_id="8jrXecmLwkW93TuWPOJP6w",
-    client_secret="EoUz2jn4WW2o23T56QqQ9-382nbEoA",
-    password="Jitesh2910",
-    user_agent="testscript by u/AudioDuck1059",
-    username="AudioDuck1059",
-)
 
-print(reddit.user.me())
+def reddit_object():
+    content = {}
+    reddit = praw.Reddit(
+        client_id="8jrXecmLwkW93TuWPOJP6w",
+        client_secret="EoUz2jn4WW2o23T56QqQ9-382nbEoA",
+        password="Jitesh2910",
+        user_agent="testscript by u/AudioDuck1059",
+        username="AudioDuck1059",
+    )
 
-url = str(input("Please input the reddit URL: "))
-submission = reddit.submission(url=url)
+    print(reddit.user.me())
 
-try:
+    url = str(input("Please input the reddit URL: "))
+    submission = reddit.submission(url=url)
+
+    try:
         content["thread_url"] = submission.url
         content["thread_title"] = submission.title
         content["thread_post"] = submission.selftext
@@ -29,9 +36,45 @@ try:
                     }
                 )
 
-except AttributeError as e:
-   pass
+    except AttributeError as e:
+        pass
+
+    print("Received AskReddit threads successfully.")
+    print(content)
 
 
-print("Received AskReddit threads successfully.")
-print(content)
+def save_text_to_mp3(reddit_obj):
+    """Saves Text to MP3 files.
+    Args:
+        reddit_obj : The reddit object you received from the reddit API in the askreddit.py file.
+    """
+    print("Saving Text to MP3 files...")
+    length = 0
+
+    # Create a folder for the mp3 files.
+    Path("assets/mp3").mkdir(parents=True, exist_ok=True)
+
+    tts = gTTS(text=reddit_obj["thread_title"], lang="en", slow=False)
+    tts.save(f"assets/mp3/title.mp3")
+    length += MP3(f"assets/mp3/title.mp3").info.length
+
+    try:
+        Path(f"assets/mp3/posttext.mp3").unlink()
+    except OSError as e:
+        pass
+
+    if reddit_obj["thread_post"] != "":
+        tts = gTTS(text=reddit_obj["thread_post"], lang="en", slow=False)
+        tts.save(f"assets/mp3/posttext.mp3")
+        length += MP3(f"assets/mp3/posttext.mp3").info.length
+
+    for idx, comment in track(enumerate(reddit_obj["comments"]), "Saving..."):
+        # ! Stop creating mp3 files if the length is greater than 50 seconds. This can be longer, but this is just a good starting point
+        if length > 50:
+            break
+        tts = gTTS(text=comment["comment_body"], lang="en", slow=False)
+        tts.save(f"assets/mp3/{idx}.mp3")
+        length += MP3(f"assets/mp3/{idx}.mp3").info.length
+
+
+save_text_to_mp3(content)
