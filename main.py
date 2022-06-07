@@ -40,7 +40,7 @@ def reddit_object():
         pass
 
     print("Received AskReddit threads successfully.")
-    print(content)
+    return content
 
 
 def save_text_to_mp3(reddit_obj):
@@ -53,10 +53,11 @@ def save_text_to_mp3(reddit_obj):
 
     # Create a folder for the mp3 files.
     Path("assets/mp3").mkdir(parents=True, exist_ok=True)
+    print(reddit_obj['thread_title'])
 
     tts = gTTS(text=reddit_obj["thread_title"], lang="en", slow=False)
-    tts.save(f"assets/mp3/title.mp3")
-    length += MP3(f"assets/mp3/title.mp3").info.length
+    tts.save(f"assets/mp3/{reddit_obj['thread_title']}title.mp3")
+    length += MP3(f"assets/mp3/{reddit_obj['thread_title']}title.mp3").info.length
 
     try:
         Path(f"assets/mp3/posttext.mp3").unlink()
@@ -73,8 +74,8 @@ def save_text_to_mp3(reddit_obj):
         if length > 50:
             break
         tts = gTTS(text=comment["comment_body"], lang="en", slow=False)
-        tts.save(f"assets/mp3/{idx}.mp3")
-        length += MP3(f"assets/mp3/{idx}.mp3").info.length
+        tts.save(f"assets/mp3/{reddit_obj['thread_title']}{idx}.mp3")
+        length += MP3(f"assets/mp3/{reddit_obj['thread_title']}{idx}.mp3").info.length
 
 
-save_text_to_mp3(content)
+save_text_to_mp3(reddit_object())
