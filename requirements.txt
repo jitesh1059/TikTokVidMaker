@@ -3,5 +3,5 @@ requests
 pathlib
 mutagen
 rich
-bs4
 gtts
+pandas

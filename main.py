@@ -4,7 +4,7 @@ from pathlib import Path
 from mutagen.mp3 import MP3
 from rich.progress import track
 import requests
-from bs4 import BeautifulSoup
+import pandas as pd
 
 
 def reddit_object():
@@ -76,7 +76,11 @@ def reddit_object():
     res = requests.get(f"https://oauth.reddit.com/r/{buggy_name}hot",
                    headers=headers)
 
-    print(res.json())  # let's see what we get
+    #print(res.json())  # let's see what we get
+
+    # loop through each post retrieved from GET request
+    for post in res.json()['data']['children']:
+        print(post['data']['title'])
 
 
 def save_text_to_mp3(reddit_obj):
