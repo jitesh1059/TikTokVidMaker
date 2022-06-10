@@ -1,0 +1,6 @@
+praw
+requests
+pathlib
+mutagen
+rich
+bs4

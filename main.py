@@ -3,6 +3,8 @@ from gtts import gTTS
 from pathlib import Path
 from mutagen.mp3 import MP3
 from rich.progress import track
+import requests
+from bs4 import BeautifulSoup
 
 
 def reddit_object():
@@ -18,29 +20,34 @@ def reddit_object():
     print(reddit.user.me())
 
     url = str(input("Please input the reddit URL: "))
-    submission = reddit.submission(url=url)
+    substring = "comments"
 
-    try:
-        content["thread_url"] = submission.url
-        content["thread_title"] = submission.title
-        content["thread_post"] = submission.selftext
-        content["comments"] = []
+    if url.find(substring) != -1:
+        submission = reddit.submission(url=url)
+        try:
+            content["thread_url"] = submission.url
+            content["thread_title"] = submission.title
+            content["thread_post"] = submission.selftext
+            content["comments"] = []
 
-        for top_level_comment in submission.comments:
-            if not top_level_comment.stickied:
-                content["comments"].append(
-                    {
-                        "comment_body": top_level_comment.body,
-                        "comment_url": top_level_comment.permalink,
-                        "comment_id": top_level_comment.id,
-                    }
-                )
+            for top_level_comment in submission.comments:
+                if not top_level_comment.stickied:
+                    content["comments"].append(
+                        {
+                            "comment_body": top_level_comment.body,
+                            "comment_url": top_level_comment.permalink,
+                            "comment_id": top_level_comment.id,
+                        }
+                    )
 
-    except AttributeError as e:
-        pass
+        except AttributeError as e:
+            pass
 
-    print("Received AskReddit threads successfully.")
-    return content
+        print("Received AskReddit threads successfully.")
+    
+    else:
+        x = requests.get(url)
+        print(x.text)
 
 
 def save_text_to_mp3(reddit_obj):
@@ -57,7 +64,8 @@ def save_text_to_mp3(reddit_obj):
 
     tts = gTTS(text=reddit_obj["thread_title"], lang="en", slow=False)
     tts.save(f"assets/mp3/{reddit_obj['thread_title']}title.mp3")
-    length += MP3(f"assets/mp3/{reddit_obj['thread_title']}title.mp3").info.length
+    length += MP3(
+        f"assets/mp3/{reddit_obj['thread_title']}title.mp3").info.length
 
     try:
         Path(f"assets/mp3/posttext.mp3").unlink()
@@ -75,7 +83,9 @@ def save_text_to_mp3(reddit_obj):
             break
         tts = gTTS(text=comment["comment_body"], lang="en", slow=False)
         tts.save(f"assets/mp3/{reddit_obj['thread_title']}{idx}.mp3")
-        length += MP3(f"assets/mp3/{reddit_obj['thread_title']}{idx}.mp3").info.length
+        length += MP3(
+            f"assets/mp3/{reddit_obj['thread_title']}{idx}.mp3").info.length
 
+    return idx, length
 
-save_text_to_mp3(reddit_object())
+reddit_object()
