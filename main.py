@@ -24,6 +24,7 @@ def reddit_object():
 
     if url.find(substring) != -1:
         submission = reddit.submission(url=url)
+        print(submission.selftext)
         try:
             content["thread_url"] = submission.url
             content["thread_title"] = submission.title
@@ -43,7 +44,7 @@ def reddit_object():
         except AttributeError as e:
             pass
 
-        print("Received AskReddit threads successfully.")
+        print("Received threads successfully.")
 
     else:
         name = str(input("Please input a name for your video: "))
@@ -81,10 +82,19 @@ def reddit_object():
 
         # loop through each post retrieved from GET request
 
-        content["thread_title"] = f"{name}"
-        content["thread_url"] = url
-        for post in res.json()['data']['children']:
-            print(post['data']['title'])
+        try:
+            content["thread_title"] = f"{name}"
+            content["thread_url"] = url
+            for post in res.json()['data']['children']:
+                content["comments"] = post['data']['title']
+            
+
+        except AttributeError as e:
+            pass
+
+        print("Received threads successfully.")
+    
+    return content
 
 
 def save_text_to_mp3(reddit_obj):
@@ -126,4 +136,4 @@ def save_text_to_mp3(reddit_obj):
     return idx, length
 
 
-reddit_object()
+save_text_to_mp3(reddit_object())
