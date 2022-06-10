@@ -24,7 +24,7 @@ def reddit_object():
 
     if url.find(substring) != -1:
         submission = reddit.submission(url=url)
-        print(submission.selftext)
+        
         try:
             content["thread_url"] = submission.url
             content["thread_title"] = submission.title
@@ -85,8 +85,14 @@ def reddit_object():
         try:
             content["thread_title"] = f"{name}"
             content["thread_url"] = url
+            content["comments"] = []
             for post in res.json()['data']['children']:
-                content["comments"] = post['data']['title']
+                content["thread_post"] = post["data"]["selftext"]
+                content["comments"].append(
+                        {
+                            "comment_body": post["data"]["title"]
+                        }
+                    )
             
 
         except AttributeError as e:
