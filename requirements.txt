@@ -4,3 +4,4 @@ pathlib
 mutagen
 rich
 bs4
+gtts
