@@ -6,6 +6,9 @@ from rich.progress import track
 import requests
 import pandas as pd
 
+"""
+https://www.reddit.com/r/godtiersuperpowers/ ---> Godtiersuperpowers link
+"""
 
 def reddit_object():
     content = {}
@@ -86,8 +89,8 @@ def reddit_object():
             content["thread_title"] = f"{name}"
             content["thread_url"] = url
             content["comments"] = []
+            content["thread_post"] = ""
             for post in res.json()['data']['children']:
-                content["thread_post"] = post["data"]["selftext"]
                 content["comments"].append(
                         {
                             "comment_body": post["data"]["title"]
@@ -135,9 +138,9 @@ def save_text_to_mp3(reddit_obj):
         if length > 50:
             break
         tts = gTTS(text=comment["comment_body"], lang="en", slow=False)
-        tts.save(f"assets/mp3/{reddit_obj['thread_title']}{idx}.mp3")
+        tts.save(f"assets/mp3/{reddit_obj['thread_title']}-{idx}.mp3")
         length += MP3(
-            f"assets/mp3/{reddit_obj['thread_title']}{idx}.mp3").info.length
+            f"assets/mp3/{reddit_obj['thread_title']}-{idx}.mp3").info.length
 
     return idx, length
 
