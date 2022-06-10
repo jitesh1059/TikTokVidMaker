@@ -5,9 +5,14 @@ from mutagen.mp3 import MP3
 from rich.progress import track
 import requests
 import random
+from playwright.sync_api import sync_playwright, ViewportSize
+import json
+
+theme = "dark"
 
 """
 https://www.reddit.com/r/godtiersuperpowers/ ---> Godtiersuperpowers link
+https://www.reddit.com/r/AskReddit/comments/v8jcvm/would_limiting_the_age_of_the_president_to_65_be/
 """
 
 def reddit_object():
@@ -50,7 +55,6 @@ def reddit_object():
         print("Received threads successfully.")
 
     else:
-        num = 6
         name = str(input("Please input a name for your video: "))
         num = int(input("Please input the number of threads you would like to use (Recommended value is 5-8): "))
         buggy_name = url.split("/r/",1)[1]
@@ -80,8 +84,11 @@ def reddit_object():
         # while the token is valid (~2 hours) we just add headers=headers to our requests
         requests.get('https://oauth.reddit.com/api/v1/me', headers=headers)
 
-        res = requests.get(f"https://oauth.reddit.com/r/{buggy_name}",
+        res = requests.get(f"https://oauth.reddit.com/r/{buggy_name}new",
                     headers=headers)
+
+        item = res.json()['data']['children'][0]
+        print(item['data']['id'])
         
         try:
             content["thread_title"] = f"{name}"
@@ -90,14 +97,15 @@ def reddit_object():
             content["thread_post"] = ""
             new_list = []
             for post in res.json()['data']['children']:
-                new_list.append(post["data"]["title"])
+            #     new_list.append(post["data"]["title"])
             
-            newest_list = random.choices(new_list, weights=None, cum_weights = None, k = num)
+            # newest_list = random.choices(new_list, weights=None, cum_weights = None, k = num)
 
-            for i in range(len(newest_list)):
+            # for i in range(len(newest_list)):
                 content["comments"].append(
                     {
-                        "comment_body": newest_list[i]
+                        "comment_body": post["data"]["title"], #newest_list[i]
+                        "comment_id": post["data"]["id"]
                     }
                 )
             
@@ -107,7 +115,7 @@ def reddit_object():
 
         print("Received threads successfully.")
     
-    return content
+    return content, url
 
 
 def save_text_to_mp3(reddit_obj):
@@ -149,6 +157,85 @@ def save_text_to_mp3(reddit_obj):
     return idx, length
 
 
-save_text_to_mp3(
-reddit_object()
+def download_screenshots_of_reddit_posts(reddit_object, url, screenshot_num, theme):
+    """Downloads screenshots of reddit posts as they are seen on the web.
+    Args:
+        reddit_object: The Reddit Object you received in askreddit.py
+        screenshot_num: The number of screenshots you want to download.
+    """
+    print("Downloading Screenshots of Reddit Posts 📷")
+
+    # ! Make sure the reddit screenshots folder exists
+    Path("assets/png").mkdir(parents=True, exist_ok=True)
+
+    with sync_playwright() as p:
+        print("Launching Headless Browser...")
+
+        browser = p.chromium.launch()
+        context = browser.new_context()
+
+        if theme.casefold() == "dark":
+            cookie_file = open('video_creation/cookies.json')
+            cookies = json.load(cookie_file)
+            context.add_cookies(cookies)
+
+        # Get the thread screenshot
+        page = context.new_page()
+        page.set_default_timeout(0)
+        page.goto(reddit_object["thread_url"])
+        page.set_viewport_size(ViewportSize(width=1920, height=1080))
+        if page.locator('[data-testid="content-gate"]').is_visible():
+            # This means the post is NSFW and requires to click the proceed button.
+
+            print("Post is NSFW. You are spicy...")
+            page.locator('[data-testid="content-gate"] button').click()
+
+        page.locator('[data-test-id="post-content"]').screenshot(
+            path="assets/png/title.png"
+        )
+
+        substring = "comments"
+        if url.find(substring) != -1:
+            for idx, comment in track(
+                enumerate(reddit_object["comments"]), "Downloading screenshots..."
+            ):
+
+                # Stop if we have reached the screenshot_num
+                if idx >= screenshot_num:
+                    break
+
+                if page.locator('[data-testid="content-gate"]').is_visible():
+                    page.locator('[data-testid="content-gate"] button').click()
+
+                page.goto(f'https://reddit.com{comment["comment_url"]}', timeout=0)
+                page.locator(f"#t1_{comment['comment_id']}").screenshot(
+                    path=f"assets/png/comment_{idx}.png"
+                )
+
+            print("Screenshots downloaded Successfully.")
+        
+        else:
+            for idx, comment in track(
+                enumerate(reddit_object["comments"]), "Downloading screenshots..."
+            ):
+
+                # Stop if we have reached the screenshot_num
+                if idx >= screenshot_num:
+                    break
+
+                if page.locator('[data-testid="content-gate"]').is_visible():
+                    page.locator('[data-testid="content-gate"] button').click()
+
+                page.goto(url, timeout=0)
+                page.locator(f"#t3_{comment['comment_id']}").screenshot(
+                    path=f"assets/png/comment_{idx}.png"
+                )
+            
+            print("Screenshots downloaded Successfully.")
+
+
+new_obj, url = reddit_object()
+length, number_of_comments = save_text_to_mp3(new_obj)
+download_screenshots_of_reddit_posts(
+    new_obj, url,  number_of_comments, theme
 )
