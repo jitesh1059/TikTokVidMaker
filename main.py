@@ -50,7 +50,9 @@ def reddit_object():
         print("Received threads successfully.")
 
     else:
+        num = 6
         name = str(input("Please input a name for your video: "))
+        num = int(input("Please input the number of threads you would like to use (Recommended value is 5-8): "))
         buggy_name = url.split("/r/",1)[1]
         import requests
         
@@ -89,10 +91,9 @@ def reddit_object():
             new_list = []
             for post in res.json()['data']['children']:
                 new_list.append(post["data"]["title"])
+            
+            newest_list = random.choices(new_list, weights=None, cum_weights = None, k = num)
 
-            print(len(new_list))
-            newest_list = random.choices(new_list, weights=None, cum_weights = None, k = 7)
-            print(newest_list)
             for i in range(len(newest_list)):
                 content["comments"].append(
                     {
