@@ -11,6 +11,11 @@ import json
 theme = "dark"
 
 """
+"QscnL9OySMkHhGudEvEya" --> Title Class
+"_1poyrkZ7g36PawDueRza-J _11R7M_VOgKO1RJyRSRErT3 " --> Thread Post Class
+"""
+
+"""
 https://www.reddit.com/r/godtiersuperpowers/ ---> Godtiersuperpowers link
 https://www.reddit.com/r/AskReddit/comments/v8jcvm/would_limiting_the_age_of_the_president_to_65_be/
 """
@@ -85,7 +90,7 @@ def reddit_object():
         requests.get('https://oauth.reddit.com/api/v1/me', headers=headers)
 
         res = requests.get(f"https://oauth.reddit.com/r/{buggy_name}new",
-                    headers=headers)
+                    headers=headers, params = {"limit": num})
 
         item = res.json()['data']['children'][0]
         print(item['data']['id'])
@@ -181,21 +186,22 @@ def download_screenshots_of_reddit_posts(reddit_object, url, screenshot_num, the
 
         # Get the thread screenshot
         page = context.new_page()
-        page.set_default_timeout(0)
         page.goto(reddit_object["thread_url"])
         page.set_viewport_size(ViewportSize(width=1920, height=1080))
-        if page.locator('[data-testid="content-gate"]').is_visible():
-            # This means the post is NSFW and requires to click the proceed button.
-
-            print("Post is NSFW. You are spicy...")
-            page.locator('[data-testid="content-gate"] button').click()
-
-        page.locator('[data-test-id="post-content"]').screenshot(
-            path="assets/png/title.png"
-        )
+        
 
         substring = "comments"
         if url.find(substring) != -1:
+            if page.locator('[data-testid="content-gate"]').is_visible():
+                # This means the post is NSFW and requires to click the proceed button.
+
+                print("Post is NSFW. You are spicy...")
+                page.locator('[data-testid="content-gate"] button').click()
+
+            page.locator('[data-test-id="post-content"]').screenshot(
+                path="assets/png/title.png"
+            )
+
             for idx, comment in track(
                 enumerate(reddit_object["comments"]), "Downloading screenshots..."
             ):
@@ -207,7 +213,7 @@ def download_screenshots_of_reddit_posts(reddit_object, url, screenshot_num, the
                 if page.locator('[data-testid="content-gate"]').is_visible():
                     page.locator('[data-testid="content-gate"] button').click()
 
-                page.goto(f'https://reddit.com{comment["comment_url"]}', timeout=0)
+                page.goto(f'https://reddit.com{comment["comment_url"]}')
                 page.locator(f"#t1_{comment['comment_id']}").screenshot(
                     path=f"assets/png/comment_{idx}.png"
                 )
@@ -215,20 +221,23 @@ def download_screenshots_of_reddit_posts(reddit_object, url, screenshot_num, the
             print("Screenshots downloaded Successfully.")
         
         else:
+            buggy_name = url.split("/r/",1)[1]
+            buggy_name = buggy_name[:-1]
+            url = url + "new"
+            page.locator("h1", has_text=f"{buggy_name}").screenshot(
+                path="assets/png/title.png"
+            )
+            
             for idx, comment in track(
                 enumerate(reddit_object["comments"]), "Downloading screenshots..."
             ):
-
                 # Stop if we have reached the screenshot_num
                 if idx >= screenshot_num:
                     break
-
-                if page.locator('[data-testid="content-gate"]').is_visible():
-                    page.locator('[data-testid="content-gate"] button').click()
-
-                page.goto(url, timeout=0)
-                page.locator(f"#t3_{comment['comment_id']}").screenshot(
-                    path=f"assets/png/comment_{idx}.png"
+                
+                page.goto(url)
+                page.locator(f'#t3_{comment["comment_id"]}').screenshot(
+                    path=f"assets/png/{buggy_name}comment_{idx}.png"
                 )
             
             print("Screenshots downloaded Successfully.")
