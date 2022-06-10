@@ -4,7 +4,7 @@ from pathlib import Path
 from mutagen.mp3 import MP3
 from rich.progress import track
 import requests
-import pandas as pd
+import random
 
 """
 https://www.reddit.com/r/godtiersuperpowers/ ---> Godtiersuperpowers link
@@ -78,24 +78,27 @@ def reddit_object():
         # while the token is valid (~2 hours) we just add headers=headers to our requests
         requests.get('https://oauth.reddit.com/api/v1/me', headers=headers)
 
-        res = requests.get(f"https://oauth.reddit.com/r/{buggy_name}hot",
+        res = requests.get(f"https://oauth.reddit.com/r/{buggy_name}",
                     headers=headers)
-
-        #print(res.json())  # let's see what we get
-
-        # loop through each post retrieved from GET request
-
+        
         try:
             content["thread_title"] = f"{name}"
             content["thread_url"] = url
             content["comments"] = []
             content["thread_post"] = ""
+            new_list = []
             for post in res.json()['data']['children']:
+                new_list.append(post["data"]["title"])
+
+            print(len(new_list))
+            newest_list = random.choices(new_list, weights=None, cum_weights = None, k = 7)
+            print(newest_list)
+            for i in range(len(newest_list)):
                 content["comments"].append(
-                        {
-                            "comment_body": post["data"]["title"]
-                        }
-                    )
+                    {
+                        "comment_body": newest_list[i]
+                    }
+                )
             
 
         except AttributeError as e:
@@ -145,4 +148,6 @@ def save_text_to_mp3(reddit_obj):
     return idx, length
 
 
-save_text_to_mp3(reddit_object())
+save_text_to_mp3(
+reddit_object()
+)
