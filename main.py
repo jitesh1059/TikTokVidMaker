@@ -10,16 +10,6 @@ import json
 
 theme = "dark"
 
-"""
-"QscnL9OySMkHhGudEvEya" --> Title Class
-"_1poyrkZ7g36PawDueRza-J _11R7M_VOgKO1RJyRSRErT3 " --> Thread Post Class
-"""
-
-"""
-https://www.reddit.com/r/godtiersuperpowers/ ---> Godtiersuperpowers link
-https://www.reddit.com/r/AskReddit/comments/v8jcvm/would_limiting_the_age_of_the_president_to_65_be/
-"""
-
 def reddit_object():
     content = {}
     reddit = praw.Reddit(
