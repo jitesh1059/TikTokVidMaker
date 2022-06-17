@@ -7,8 +7,20 @@ import requests
 import random
 from playwright.sync_api import sync_playwright, ViewportSize
 import json
+from moviepy.editor import (
+    VideoFileClip,
+    AudioFileClip,
+    ImageClip,
+    concatenate_videoclips,
+    concatenate_audioclips,
+    CompositeAudioClip,
+    CompositeVideoClip,
+)
+import re
 
 theme = "dark"
+W, H = 1080, 1920
+opacity = "0.9"
 
 def reddit_object():
     content = {}
@@ -126,9 +138,9 @@ def save_text_to_mp3(reddit_obj):
     print(reddit_obj['thread_title'])
 
     tts = gTTS(text=reddit_obj["thread_title"], lang="en", slow=False)
-    tts.save(f"assets/mp3/{reddit_obj['thread_title']}title.mp3")
+    tts.save(f"assets/mp3/title.mp3")
     length += MP3(
-        f"assets/mp3/{reddit_obj['thread_title']}title.mp3").info.length
+        f"assets/mp3/title.mp3").info.length
 
     try:
         Path(f"assets/mp3/posttext.mp3").unlink()
@@ -145,9 +157,9 @@ def save_text_to_mp3(reddit_obj):
         if length > 50:
             break
         tts = gTTS(text=comment["comment_body"], lang="en", slow=False)
-        tts.save(f"assets/mp3/{reddit_obj['thread_title']}-{idx}.mp3")
+        tts.save(f"assets/mp3/{idx}.mp3")
         length += MP3(
-            f"assets/mp3/{reddit_obj['thread_title']}-{idx}.mp3").info.length
+            f"assets/mp3/{idx}.mp3").info.length
 
     return idx, length
 
@@ -227,10 +239,75 @@ def download_screenshots_of_reddit_posts(reddit_object, url, screenshot_num, the
                 
                 page.goto(url)
                 page.locator(f'#t3_{comment["comment_id"]}').screenshot(
-                    path=f"assets/png/{buggy_name}comment_{idx}.png"
+                    path=f"assets/png/comment_{idx}.png"
                 )
             
             print("Screenshots downloaded Successfully.")
+
+
+def make_final_video(number_of_clips):
+    
+    print_step("Creating the final video...")
+
+    VideoFileClip.reW = lambda clip: clip.resize(width=W)
+    VideoFileClip.reH = lambda clip: clip.resize(width=H)
+
+    background_clip = (
+        VideoFileClip("assets/mp4/clip.mp4")
+        .without_audio()
+        .resize(height=H)
+        .crop(x1=1166.6, y1=0, x2=2246.6, y2=1920)
+    )
+
+    # Gather all audio clips
+    audio_clips = []
+    for i in range(0, number_of_clips):
+        audio_clips.append(AudioFileClip(f"assets/mp3/{i}.mp3"))
+    audio_clips.insert(0, AudioFileClip(f"assets/mp3/title.mp3"))
+    try:
+        audio_clips.insert(1, AudioFileClip(f"assets/mp3/posttext.mp3"))
+    except:
+        OSError()
+    audio_concat = concatenate_audioclips(audio_clips)
+    audio_composite = CompositeAudioClip([audio_concat])
+
+    # Gather all images
+    image_clips = []
+    for i in range(0, number_of_clips):
+        image_clips.append(
+            ImageClip(f"assets/png/comment_{i}.png")
+            .set_duration(audio_clips[i + 1].duration)
+            .set_position("center")
+            .resize(width=W - 100)
+            .set_opacity(float(opacity)),
+        )
+    if os.path.exists(f"assets/mp3/posttext.mp3"):
+        image_clips.insert(
+            0,
+            ImageClip(f"assets/png/title.png")
+            .set_duration(audio_clips[0].duration + audio_clips[1].duration)
+            .set_position("center")
+            .resize(width=W - 100)
+            .set_opacity(float(opacity)),
+            )
+    else:
+        image_clips.insert(
+            0,
+            ImageClip(f"assets/png/title.png")
+            .set_duration(audio_clips[0].duration)
+            .set_position("center")
+            .resize(width=W - 100)
+            .set_opacity(float(opacity)),
+            )
+    image_concat = concatenate_videoclips(image_clips).set_position(
+        ("center", "center")
+    )
+    image_concat.audio = audio_composite
+    final = CompositeVideoClip([background_clip, image_concat])
+    filename = (re.sub('[?\"%*:|<>]', '', ("assets/" + reddit.subreddit.submission.title + ".mp4")))
+    final.write_videofile(filename, fps=30, audio_codec="aac", audio_bitrate="192k")
+    for i in range(0, number_of_clips):
+        pass
 
 
 new_obj, url = reddit_object()
@@ -238,3 +315,4 @@ length, number_of_comments = save_text_to_mp3(new_obj)
 download_screenshots_of_reddit_posts(
     new_obj, url,  number_of_comments, theme
 )
+make_final_video(number_of_comments)
