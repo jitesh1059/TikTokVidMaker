@@ -16,6 +16,11 @@ from moviepy.editor import (
     CompositeAudioClip,
     CompositeVideoClip,
 )
+import random
+from random import randrange
+from pytube import YouTube
+from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
+from moviepy.editor import VideoFileClip
 import re
 
 theme = "dark"
@@ -244,10 +249,61 @@ def download_screenshots_of_reddit_posts(reddit_object, url, screenshot_num, the
             
             print("Screenshots downloaded Successfully.")
 
+def get_start_and_end_times(video_length, length_of_clip):
+    random_time = randrange(180, int(length_of_clip) - int(video_length))
+    return random_time, random_time + video_length
+
+def download_background():
+    """Downloads the backgrounds/s video from YouTube."""
+    Path("./assets/backgrounds/").mkdir(parents=True, exist_ok=True)
+    background_options = [  # uri , filename , credit
+        (
+            "https://www.youtube.com/watch?v=2X9QGY__0II",
+            "rocket_league.mp4",
+            "Orbital Gameplay",
+        ),
+    ]
+    # note: make sure the file name doesn't include an - in it
+    if not len(listdir("./assets/backgrounds")) >= len(
+        background_options
+    ):  # if there are any background videos not installed
+        print(
+            "We need to download the backgrounds videos. they are fairly large but it's only done once. 😎"
+        )
+        print("Downloading the backgrounds videos... please be patient 🙏 ")
+        for uri, filename, credit in background_options:
+            if Path(f"assets/backgrounds/{credit}-{filename}").is_file():
+                continue  # adds check to see if file exists before downloading
+            print(f"Downloading {filename} from {uri}")
+            YouTube(uri).streams.filter(res="1080p").first().download(
+                "assets/backgrounds", filename=f"{credit}-{filename}"
+            )
+
+        print(
+            "Background videos downloaded successfully! 🎉"
+        )
+
+
+def chop_background_video(video_length):
+    print("Finding a spot in the backgrounds video to chop...✂️")
+    choice = random.choice(listdir("assets/backgrounds"))
+    environ["background_credit"] = choice.split("-")[0]
+
+    background = VideoFileClip(f"assets/backgrounds/{choice}")
+
+    start_time, end_time = get_start_and_end_times(video_length, background.duration)
+    ffmpeg_extract_subclip(
+        f"assets/backgrounds/{choice}",
+        start_time,
+        end_time,
+        targetname="assets/temp/background.mp4",
+    )
+    print("Background video chopped successfully!")
+    return True
 
 def make_final_video(number_of_clips):
     
-    print_step("Creating the final video...")
+    print("Creating the final video...")
 
     VideoFileClip.reW = lambda clip: clip.resize(width=W)
     VideoFileClip.reH = lambda clip: clip.resize(width=H)
