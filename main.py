@@ -4,9 +4,14 @@ from pathlib import Path
 from mutagen.mp3 import MP3
 from rich.progress import track
 import requests
-import random
 from playwright.sync_api import sync_playwright, ViewportSize
 import json
+from random import randrange
+from pytube import YouTube
+import re
+import time
+from os import listdir, environ
+from moviepy.video.io import ffmpeg_tools
 from moviepy.editor import (
     VideoFileClip,
     AudioFileClip,
@@ -16,14 +21,7 @@ from moviepy.editor import (
     CompositeAudioClip,
     CompositeVideoClip,
 )
-import random
-from random import randrange
-from pytube import YouTube
-from moviepy.video.io.ffmpeg_tools import ffmpeg_extract_subclip
-from moviepy.editor import VideoFileClip
-import re
-from os import listdir, environ
-from moviepy.video.io import ffmpeg_tools
+
 
 theme = "dark"
 W, H = 1080, 1920
@@ -283,14 +281,16 @@ def chop_background_video(video_length):
     background = VideoFileClip(f"assets/backgrounds/bbswitzer-parkour.mp4")
 
     start_time, end_time = get_start_and_end_times(video_length, background.duration)
-    ffmpeg_extract_subclip("assets/backgrounds/bbswitzer-parkour.mp4",start_time,end_time,targetname="assets/temp/background.mp4",
-    )
+    background = background.subclip(start_time, end_time)
+    Path("./assets/temp/").mkdir(parents=True, exist_ok=True)
+    background.write_videofile("assets/temp/background.mp4")
+
     print("Background video chopped successfully!")
     return True
 
 
 def make_final_video(number_of_clips, length, name, url, new_obj):
-    print_step("Creating the final video 🎥")
+    print("Creating the final video 🎥")
     VideoFileClip.reW = lambda clip: clip.resize(width=W)
     VideoFileClip.reH = lambda clip: clip.resize(width=H)
     background_clip = (
@@ -302,9 +302,9 @@ def make_final_video(number_of_clips, length, name, url, new_obj):
 
     # Gather all audio clips
     audio_clips = []
-    for i in range(0, number_of_clips):
-        audio_clips.append(AudioFileClip(f"assets/temp/mp3/{i}.mp3"))
-    audio_clips.insert(0, AudioFileClip(f"assets/temp/mp3/title.mp3"))
+    for i in range(0, length):
+        audio_clips.append(AudioFileClip(f"assets/mp3/{i}.mp3"))
+    audio_clips.insert(0, AudioFileClip(f"assets/mp3/title.mp3"))
     audio_concat = concatenate_audioclips(audio_clips)
     audio_composite = CompositeAudioClip([audio_concat])
 
@@ -313,7 +313,7 @@ def make_final_video(number_of_clips, length, name, url, new_obj):
     # round total_length to an integer
     int_total_length = round(total_length)
     # Output Length
-    console.log(f"[bold green] Video Will Be: {int_total_length} Seconds Long")
+    print(f"Video Will Be: {int_total_length} Seconds Long")
 
     # add title to video
     image_clips = []
@@ -323,7 +323,7 @@ def make_final_video(number_of_clips, length, name, url, new_obj):
     ):  # opacity not set or is set to one OR MORE
         image_clips.insert(
             0,
-            ImageClip(f"assets/temp/png/title.png")
+            ImageClip(f"assets/png/title.png")
             .set_duration(audio_clips[0].duration)
             .set_position("center")
             .resize(width=W - 100)
@@ -332,24 +332,24 @@ def make_final_video(number_of_clips, length, name, url, new_obj):
     else:
         image_clips.insert(
             0,
-            ImageClip(f"assets/temp/png/title.png")
+            ImageClip(f"assets/png/title.png")
             .set_duration(audio_clips[0].duration)
             .set_position("center")
             .resize(width=W - 100))
 
-    for i in range(0, number_of_clips):
+    for i in range(0, length):
         if (
                 opacity is None or float(opacity) >= 1
         ):  # opacity not set or is set to one OR MORE
             image_clips.append(
-                ImageClip(f"assets/temp/png/comment_{i}.png")
+                ImageClip(f"assets/temp/comment_{i}.png")
                 .set_duration(audio_clips[i + 1].duration)
                 .set_position("center")
                 .resize(width=W - 100),
             )
         else:
             image_clips.append(
-                ImageClip(f"assets/temp/png/comment_{i}.png")
+                ImageClip(f"assets/png/comment_{i}.png")
                 .set_duration(audio_clips[i + 1].duration)
                 .set_position("center")
                 .resize(width=W - 100)
@@ -384,8 +384,6 @@ def make_final_video(number_of_clips, length, name, url, new_obj):
     def save_data():
         with open("./video_creation/data/videos.json", "r+") as raw_vids:
             done_vids = json.load(raw_vids)
-            if str(subreddit.submission.id) in [video["id"] for video in done_vids]:
-                return  # video already done but was specified to continue anyway in the .env file
             payload = {
                 "time": str(int(time.time())),
                 "reddit_title": str(name),
@@ -396,24 +394,15 @@ def make_final_video(number_of_clips, length, name, url, new_obj):
             json.dump(done_vids, raw_vids, ensure_ascii=False, indent=4)
 
     save_data()
-    if not exists("./results"):
-        print_substep("the results folder didn't exist so I made it")
-        os.mkdir("./results")
+    Path("./results").mkdir(parents=True, exist_ok=True)
+    
 
     final.write_videofile(
-        "assets/temp/temp.mp4", fps=30, audio_codec="aac", audio_bitrate="192k"
-    )
-    ffmpeg_tools.ffmpeg_extract_subclip(
-        "assets/temp/temp.mp4", 0, length, targetname=f"results/{filename}"
+        f"./results/{name}.mp4", fps=30, audio_codec="aac", audio_bitrate="192k"
     )
     # os.remove("assets/temp/temp.mp4")
 
-    print_step("Removing temporary files 🗑")
-    cleanups = cleanup()
-    print_substep(f"Removed {cleanups} temporary files 🗑")
-    print_substep(f"See result in the results folder!")
-
-    print_step(
+    print(
         f"Reddit title: {name}"
     )
 
@@ -432,5 +421,5 @@ download_screenshots_of_reddit_posts(
     new_obj, url,  number_of_comments, theme
 )
 download_background()
-chop_background_video(length)
+chop_background_video(number_of_comments)
 make_final_video(number_of_comments, length, name, url, new_obj)
