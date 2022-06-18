@@ -283,11 +283,7 @@ def chop_background_video(video_length):
     background = VideoFileClip(f"assets/backgrounds/bbswitzer-parkour.mp4")
 
     start_time, end_time = get_start_and_end_times(video_length, background.duration)
-    ffmpeg_extract_subclip(
-        f"assets/backgrounds/bbswitzer-parkour.mp4",
-        start_time,
-        end_time,
-        targetname="assets/temp/background.mp4",
+    ffmpeg_extract_subclip("assets/backgrounds/bbswitzer-parkour.mp4",start_time,end_time,targetname="assets/temp/background.mp4",
     )
     print("Background video chopped successfully!")
     return True
