@@ -28,6 +28,7 @@ W, H = 1080, 1920
 opacity = "0.9"
 
 def reddit_object():
+    name = str(input("Please input a name for your video: "))
     content = {}
     reddit = praw.Reddit(
         client_id="8jrXecmLwkW93TuWPOJP6w",
@@ -36,8 +37,6 @@ def reddit_object():
         user_agent="testscript by u/AudioDuck1059",
         username="AudioDuck1059",
     )
-
-    print(reddit.user.me())
 
     url = str(input("Please input the reddit URL: "))
     substring = "comments"
@@ -67,7 +66,6 @@ def reddit_object():
         print("Received threads successfully.")
 
     else:
-        name = str(input("Please input a name for your video: "))
         num = int(input("Please input the number of threads you would like to use (Recommended value is 5-8): "))
         buggy_name = url.split("/r/",1)[1]
         import requests
@@ -127,7 +125,7 @@ def reddit_object():
 
         print("Received threads successfully.")
     
-    return content, url
+    return content, url, name
 
 
 def save_text_to_mp3(reddit_obj):
@@ -301,7 +299,7 @@ def chop_background_video(video_length):
     print("Background video chopped successfully!")
     return True
 
-def make_final_video(number_of_clips):
+def make_final_video(number_of_clips, name, url):
     
     print("Creating the final video...")
 
@@ -360,15 +358,24 @@ def make_final_video(number_of_clips):
     )
     image_concat.audio = audio_composite
     final = CompositeVideoClip([background_clip, image_concat])
-    filename = (re.sub('[?\"%*:|<>]', '', ("assets/" + reddit.subreddit.submission.title + ".mp4")))
-    final.write_videofile(filename, fps=30, audio_codec="aac", audio_bitrate="192k")
-    for i in range(0, number_of_clips):
-        pass
+    substring = "comments"
+    if url.find(substring) != -1:
+        filename = (re.sub('[?\"%*:|<>]', '', ("assets/" + reddit.subreddit.submission.title + ".mp4")))
+        final.write_videofile(filename, fps=30, audio_codec="aac", audio_bitrate="192k")
+        for i in range(0, number_of_clips):
+            pass
+    else:
+        filename = (re.sub('[?\"%*:|<>]', '', ("assets/" + name + ".mp4")))
+        final.write_videofile(filename, fps=30, audio_codec="aac", audio_bitrate="192k")
+        for i in range(0, number_of_clips):
+            pass
 
 
-new_obj, url = reddit_object()
+new_obj, url, name = reddit_object()
 length, number_of_comments = save_text_to_mp3(new_obj)
 download_screenshots_of_reddit_posts(
     new_obj, url,  number_of_comments, theme
 )
-make_final_video(number_of_comments)
+download_background()
+chop_background_video(length)
+make_final_video(number_of_comments, name, url)

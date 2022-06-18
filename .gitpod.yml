@@ -6,7 +6,6 @@ tasks:
   - init: pip3 install -r requirements.txt
           playwright install
           playwright install-deps
-          yt-dlp 
   - command: python main.py
 
 
