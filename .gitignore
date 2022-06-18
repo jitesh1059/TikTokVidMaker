@@ -129,4 +129,4 @@ dmypy.json
 .pyre/
 
 # Unneeded assets folders
-assets/background
+assets/backgrounds
