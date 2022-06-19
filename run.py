@@ -1,4 +1,4 @@
-"""import time
+import time
 import random
 import requests
 from selenium import webdriver
@@ -105,4 +105,4 @@ def upload(video_path):
 # Here is the path of the video that you want to upload in tiktok.
 # Plese edit the path because this is different to everyone.
 upload(f"/workspace/TikTokVidMaker/results/Godtiersuperpowers Part 1.mp4")
-# ================================================================"""
+# ================================================================
