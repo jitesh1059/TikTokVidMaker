@@ -1,4 +1,4 @@
-import time
+"""import time
 import random
 import requests
 from selenium import webdriver
@@ -9,6 +9,8 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
 from selenium.common.exceptions import NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager as CM
+
+fileplace = str(input("Hey, input the filepath the video is in: "))
 
 print('=====================================================================================================')
 print('Heyy, you have to login manully on tiktok, so the bot will wait you 1 minute for loging in manually!')
@@ -102,5 +104,5 @@ def upload(video_path):
 # ================================================================
 # Here is the path of the video that you want to upload in tiktok.
 # Plese edit the path because this is different to everyone.
-upload(r"C:\Users\redi\Videos\your-video-here.mov")
-# ================================================================
+upload(f"/workspace/TikTokVidMaker/results/Godtiersuperpowers Part 1.mp4")
+# ================================================================"""
